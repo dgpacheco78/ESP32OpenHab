@@ -1,3 +1,5 @@
+
+
 /*
  * Conexión básica por MQTT del NodeMCU
  * por: Hugo Escalpelo
@@ -16,12 +18,16 @@
 //Bibliotecas
 #include <WiFi.h>  // Biblioteca para el control de WiFi
 #include <PubSubClient.h> //Biblioteca para conexion MQTT
+#include <DHT.h>
 
+DHT dht (12, DHT11);
+float t;
+float h;
 
 //Datos de WiFi
 const char* ssid = "TP-LINK_349952"; // Aquí debes poner el nombre de tu red
-const char* password = "1F349952";  // Aquí debes poner la contraseña de tu red
-//const char* password = "";
+//const char* password = "1F349952";  // Aquí debes poner la contraseña de tu red
+const char* password = "";
 
 //Datos del broker MQTT
 const char* mqtt_server = "172.16.80.230"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
@@ -46,6 +52,7 @@ void setup() {
   pinMode (statusLedPin, OUTPUT);
   digitalWrite (flashLedPin, LOW);
   digitalWrite (statusLedPin, HIGH);
+  dht.begin();
   delay(500);
 
   Serial.println();
@@ -101,6 +108,14 @@ void loop() {
     data++; // Incremento a la variable para ser enviado por MQTT
     char dataString[8]; // Define una arreglo de caracteres para enviarlos por MQTT, especifica la longitud del mensaje en 8 caracteres
     dtostrf(data, 1, 2, dataString);  // Esta es una función nativa de leguaje AVR que convierte un arreglo de caracteres en una variable String
+
+    
+    t = dht.readTemperature();        // Lee la temp en ºC 
+    h = dht.readHumidity();           // Lee la humed en % 
+    Serial.print("Temp : " + String(t));
+    Serial.print("Hume : " + String(h));
+    
+    
     Serial.print("Contador: "); // Se imprime en monitor solo para poder visualizar que el evento sucede
     Serial.println(dataString);
     client.publish("codigoIoT/G6/temp", dataString); // Esta es la función que envía los datos por MQTT, especifica el tema y el valor
