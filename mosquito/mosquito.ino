@@ -1,3 +1,6 @@
+//#include <DHT_U.h>
+#include <DHT.h>
+
 /*
  * Conexión básica por MQTT del NodeMCU
  * por: Hugo Escalpelo
@@ -24,8 +27,8 @@ const char* password = "1F349952";  // Aquí debes poner la contraseña de tu re
 //const char* password = "";
 
 //Datos del broker MQTT
-const char* mqtt_server = "172.16.80.230"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(172,16,80,230);
+const char* mqtt_server = "172.16.96.185"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
+IPAddress server(172,16,96,185);
 
 // Objetos
 WiFiClient espClient; // Este objeto maneja los datos de conexion WiFi
@@ -34,14 +37,17 @@ PubSubClient client(espClient); // Este objeto maneja los datos de conexion al b
 // Variables
 int flashLedPin = 4;  // Para indicar el estatus de conexión
 int statusLedPin = 33; // Para ser controlado por MQTT
+float t = 0, h = 0;  
 long timeNow, timeLast; // Variables de control de tiempo no bloqueante
 int data = 0; // Contador
 int wait = 5000;  // Indica la espera cada 5 segundos para envío de mensajes MQTT
+DHT dht(12, DHT11);
 
 // Inicialización del programa
 void setup() {
   // Iniciar comunicación serial
   Serial.begin (115200);
+  dht.begin();
   pinMode (flashLedPin, OUTPUT);
   pinMode (statusLedPin, OUTPUT);
   digitalWrite (flashLedPin, LOW);
@@ -89,6 +95,7 @@ void loop() {
   //Verificar siempre que haya conexión al broker
   Serial.print("Estado de conexion: ");
   Serial.println(client.connected ());
+  Serial.println(String(t) + ":" + String(h));
   if (!client.connected()) {
     reconnect();  // En caso de que no haya conexión, ejecutar la función de reconexión, definida despues del void setup ()
   }// fin del if (!client.connected())
@@ -99,12 +106,16 @@ void loop() {
     timeLast = timeNow; // Actualización de seguimiento de tiempo
 
     data++; // Incremento a la variable para ser enviado por MQTT
-    char dataString[8]; // Define una arreglo de caracteres para enviarlos por MQTT, especifica la longitud del mensaje en 8 caracteres
-    dtostrf(data, 1, 2, dataString);  // Esta es una función nativa de leguaje AVR que convierte un arreglo de caracteres en una variable String
+    t = dht.readTemperature();        // Lee la temp en ºC 
+    h = dht.readHumidity();           // Lee la humed en % 
+    char dataT[8]; // Define una arreglo de caracteres para enviarlos por MQTT, especifica la longitud del mensaje en 8 caracteres
+    char dataH[8];
+    dtostrf(t, 1, 2, dataT);  // Esta es una función nativa de leguaje AVR que convierte un arreglo de caracteres en una variable String
+    dtostrf(h, 1, 2, dataH);
     Serial.print("Contador: "); // Se imprime en monitor solo para poder visualizar que el evento sucede
-    Serial.println(dataString);
-    client.publish("codigoIoT/G6/temp", dataString); // Esta es la función que envía los datos por MQTT, especifica el tema y el valor
-    client.publish("codigoIoT/G6/hum", dataString); // Esta es la función que envía los datos por MQTT, especifica el tema y el valor
+    //Serial.println(dataString);
+    client.publish("codigoIoT/G6/temp", dataT); // Esta es la función que envía los datos por MQTT, especifica el tema y el valor
+    client.publish("codigoIoT/G6/hum", dataH); // Esta es la función que envía los datos por MQTT, especifica el tema y el valor
     
   }// fin del if (timeNow - timeLast > wait)
 }// fin del void loop ()
@@ -134,12 +145,12 @@ void callback(char* topic, byte* message, unsigned int length) {
 
   // Ejemplo, en caso de recibir el mensaje true - false, se cambiará el estado del led soldado en la placa.
   // El ESP323CAM está suscrito al tema esp/output
-  if (String(topic) == "esp32/output") {  // En caso de recibirse mensaje en el tema esp32/output
-    if(messageTemp == "true"){
+  if (String(topic) == "codigoIoT/G6/led") {  // En caso de recibirse mensaje en el tema esp32/output
+    if(messageTemp == "ON"){
       Serial.println("Led encendido");
       digitalWrite(flashLedPin, HIGH);
     }// fin del if (String(topic) == "esp32/output")
-    else if(messageTemp == "false"){
+    else if(messageTemp == "OFF"){
       Serial.println("Led apagado");
       digitalWrite(flashLedPin, LOW);
     }// fin del else if(messageTemp == "false")
@@ -152,9 +163,9 @@ void reconnect() {
   while (!client.connected()) { // Pregunta si hay conexión
     Serial.print("Tratando de contectarse...");
     // Intentar reconexión
-    if (client.connect("ESP32CAMClient")) { //Pregunta por el resultado del intento de conexión
+    if (client.connect("codigoIoT/G6/led")) { //Pregunta por el resultado del intento de conexión
       Serial.println("Conectado");
-      client.subscribe("esp32/output"); // Esta función realiza la suscripción al tema
+      client.subscribe("codigoIoT/G6/led"); // Esta función realiza la suscripción al tema
     }// fin del  if (client.connect("ESP32CAMClient"))
     else {  //en caso de que la conexión no se logre
       Serial.print("Conexion fallida, Error rc=");
