@@ -22,13 +22,13 @@
 
 
 //Datos de WiFi
-const char* ssid = "TP-LINK_349952"; // Aquí debes poner el nombre de tu red
-const char* password = "1F349952";  // Aquí debes poner la contraseña de tu red
+const char* ssid = "Docentes"; // Aquí debes poner el nombre de tu red: TP-LINK_349952
+const char* password = "$doc19_S3p";  // Aquí debes poner la contraseña de tu red: 1F349952
 //const char* password = "";
 
 //Datos del broker MQTT
-const char* mqtt_server = "172.16.96.185"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
-IPAddress server(172,16,96,185);
+const char* mqtt_server = "172.16.133.228"; // Si estas en una red local, coloca la IP asignada, en caso contrario, coloca la IP publica
+IPAddress server(172,16,133,228);
 
 // Objetos
 WiFiClient espClient; // Este objeto maneja los datos de conexion WiFi
